@@ -5,7 +5,7 @@
 # What are you looking for ?
 
 properties() { '
-kernel.string=E404R Kernel by Project 113
+kernel.string=\\ E404R Kernel by Project 113 \\
 do.modules=0
 do.systemless=1
 '; }
@@ -37,21 +37,21 @@ select_option() {
 
   SELECT_RESULT=""
   while true; do
-    ev=$(getevent -lt 2>/dev/null | grep -m1 "KEY_VOLUME")
-    case "$ev" in
-      *KEY_VOLUMEUP*)
+    key_event=$(getevent -qlc 1)
+    case "$key_event" in
+      *"KEY_VOLUMEUP"*"DOWN"*|*"KEY_VOLUMEUP"*"1"*)
         ui_print "  Selected : $2" " "
         SELECT_RESULT="$2"
         break
         ;;
-      *KEY_VOLUMEDOWN*)
+      *"KEY_VOLUMEDOWN"*"DOWN"*|*"KEY_VOLUMEDOWN"*"1"*)
         ui_print "  Selected : $3" " "
         SELECT_RESULT="$3"
         break
         ;;
     esac
+    sleep 0.1
   done
-  sleep 0.5
   echo "$SELECT_RESULT"
 }
 
@@ -67,18 +67,6 @@ configure_manual() {
     *MIUI*|*HyperOS*)
       [ "$oplus" != "1" ] && rom="rom_oem"
       dtbo="dtbo_oem"
-      ;;
-  esac
-
-  # KernelSU selection
-  select_option "KernelSU Root" "KernelSU" "Default"
-  root_sel="$SELECT_RESULT"
-  case "$root_sel" in
-    *KernelSU*)
-      root="root_ksu"
-      ;;
-    *)
-      root="root_noksu"
       ;;
   esac
 
@@ -130,16 +118,6 @@ configure_auto() {
   esac
 
   sleep 0.5
-  if [[ "$ZIPFILE" == *ksu* ]] || ([[ -d /data/adb/ksu ]] && [[ -f /data/adb/ksud ]]); then
-    ui_print "--> KernelSU is detected, configuring..."
-    root="root_ksu"
-    sleep 0.5
-  else
-    ui_print "--> KernelSU not detected, skipping..."
-    root="root_noksu"
-  fi
-
-  sleep 0.5
   if [[ "$ZIPFILE" == *effcpu* || "$ZIPFILE" == *EFFCPU* ]]; then
     ui_print "--> EFFCPUFreq is detected, configuring..."
     dtb="dtb_effcpu"
@@ -166,15 +144,39 @@ configure_auto() {
 }
 
 choose_config_mode() {
-  ui_print " " " Select Kernel Configuration :"
+  ui_print "--> Select Kernel Configuration :"
   ui_print "  (Vol +) Manual Configuration "
-  ui_print "  (Vol -) Auto Configuration " " "
-  while true; do
-    ev=$(getevent -lt 2>/dev/null | grep -m1 "KEY_VOLUME.*DOWN")
-    case $ev in
-      *KEY_VOLUMEUP*) configure_manual; break ;;
-      *KEY_VOLUMEDOWN*) configure_auto; break ;;
-    esac
+  ui_print "  (Vol -) Auto Configuration "
+  ui_print "  ! Timeout in 8 seconds, defaults to Auto"
+
+  local timeout=8
+  local start now key_event
+
+  start=$(date +%s)
+
+  while :; do
+    key_event=$(timeout 0.2 getevent -qlc 1 2>/dev/null)
+
+    if [ -n "$key_event" ]; then
+      if echo "$key_event" | grep -q "KEY_VOLUMEUP"; then
+        ui_print "  Selected : Manual Configuration" " "
+        configure_manual
+        return 0
+      fi
+
+      if echo "$key_event" | grep -q "KEY_VOLUMEDOWN"; then
+        ui_print "  Selected : Auto Configuration" " "
+        configure_auto
+        return 0
+      fi
+    fi
+
+    now=$(date +%s)
+    if [ $((now - start)) -ge $timeout ]; then
+      ui_print "  ! Timeout reached" " "
+      configure_auto
+      return 0
+    fi
   done
 }
 
@@ -182,7 +184,7 @@ choose_config_mode() {
 # Install begins here
 # 
 
-devicename=munch;
+devicename=lmi;
 case "$devicename" in
   munch|alioth|pipa)
     is_slot_device=1;
@@ -223,26 +225,27 @@ mv *-dtbo.img $home/dtbo.img
 
 dump_boot
 
-ui_print "--> Applying cmdline..."
-ui_print " e404_args=$root,$rom,$dtbo,$dtb,$batt"
-patch_cmdline "e404_args" "e404_args=$root,$rom,$dtbo,$dtb,$batt"
-
-ui_print "--> Installing... "
+ui_print "--> Applying configuration..."
+ui_print " $rom,$dtbo,$dtb,$batt"
+patch_cmdline "e404_args" "e404_args=$rom,$dtbo,$dtb,$batt"
 
 write_boot
 
 if [[ $is_slot_device == 1 ]]; then
- ui_print "--> Installing to A/B slot... "
+ ui_print "--> Installing to vendor_boot partition... "
   block=/dev/block/bootdevice/by-name/vendor_boot
   ramdisk_compression=auto
   patch_vbmeta_flag=auto
   reset_ak
   dump_boot
   write_boot
+else
+  ui_print "--> Installing to boot partition... "
 fi
 
 if [[ ! -f /vendor/etc/task_profiles.json ]]; then
 	ui_print " " " Note : Uclamp Task Profile Not Found ! " " "
 fi
 
-ui_print " " " --- Install Done ! --- "
+ui_print " " " E404R Kernel @ Project113 "
+ui_print " " " --- Install Complete --- "
