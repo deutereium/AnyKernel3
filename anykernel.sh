@@ -70,13 +70,40 @@ configure_manual() {
       ;;
   esac
 
-  # DTB selection
-  select_option "DTB CPU Frequency" "EFFCPU" "Default"
-  dtb_sel="$SELECT_RESULT"
-  case "$dtb_sel" in
-    *EFFCPU*) dtb="dtb_effcpu" ;;
-    *) dtb="dtb_def" ;;
-  esac
+  if [[ "$devicename" == "alioth" || "$devicename" == "munch" ]]; then
+    ui_print " - DTB CPU Frequency :"
+    ui_print "  (Vol +) EFFCPU (2.5GHz)"
+    ui_print "  (Vol -) Next Option"
+    
+    SELECT_RESULT=""
+    while true; do
+      key_event=$(getevent -qlc 1)
+      case "$key_event" in
+        *"KEY_VOLUMEUP"*"DOWN"*|*"KEY_VOLUMEUP"*"1"*)
+          ui_print "  Selected : EFFCPU (2.5GHz)" " "
+          dtb="dtb_effcpu"
+          break
+          ;;
+        *"KEY_VOLUMEDOWN"*"DOWN"*|*"KEY_VOLUMEDOWN"*"1"*)
+          select_option "DTB CPU Frequency" "Default (2.8GHz)" "PERFCPU (3.2GHz)"
+          case "$SELECT_RESULT" in
+            *PERFCPU*) dtb="dtb_perfcpu" ;;
+            *) dtb="dtb_def" ;;
+          esac
+          break
+          ;;
+      esac
+      sleep 0.1
+    done
+  else
+    # lmi and apollo only have effcpu and default
+    select_option "DTB CPU Frequency" "EFFCPU (2.5GHz)" "Default (2.8GHz)"
+    dtb_sel="$SELECT_RESULT"
+    case "$dtb_sel" in
+      *EFFCPU*) dtb="dtb_effcpu" ;;
+      *) dtb="dtb_def" ;;
+    esac
+  fi
 
   # Battery profile (Alioth only)
   if [[ "$devicename" == "alioth" ]]; then
@@ -118,7 +145,15 @@ configure_auto() {
   esac
 
   sleep 0.5
-  if [[ "$ZIPFILE" == *effcpu* || "$ZIPFILE" == *EFFCPU* ]]; then
+  if [[ "$ZIPFILE" == *perfcpu* || "$ZIPFILE" == *PERFCPU* ]]; then
+    if [[ "$devicename" == "alioth" || "$devicename" == "munch" ]]; then
+      ui_print "--> PERFCPUFreq is detected, configuring..."
+      dtb="dtb_perfcpu"
+    else
+      ui_print "--> PERFCPUFreq not supported on $devicename, using default..."
+      dtb="dtb_def"
+    fi
+  elif [[ "$ZIPFILE" == *effcpu* || "$ZIPFILE" == *EFFCPU* ]]; then
     ui_print "--> EFFCPUFreq is detected, configuring..."
     dtb="dtb_effcpu"
   else
@@ -184,7 +219,6 @@ choose_config_mode() {
 # Install begins here
 # 
 
-devicename=lmi;
 case "$devicename" in
   munch|alioth|pipa)
     is_slot_device=1;
