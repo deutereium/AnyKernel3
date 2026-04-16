@@ -24,9 +24,9 @@ devicecheck() {
       fi
     done
   done
-  if [[ ! "$match" ]]; then
-    abort " " " Unsupported device. Aborting...";
-  fi
+  #if [[ ! "$match" ]]; then
+  #  abort " " " Unsupported device. Aborting...";
+  #fi
 }
 
 select_option() {
@@ -68,6 +68,18 @@ configure_manual() {
       dtbo="dtbo_oem"
       ;;
   esac
+
+  # KSU selection vayu only
+  if [[ "$devicename" == "vayu" ]]; then
+    select_option "KernelSU" "KSU" "OFF"
+    ksu_sel="$SELECT_RESULT"
+    case "$ksu_sel" in
+     *KSU*) ksu="ksu" ;;
+     *) ksu="noksu" ;;
+    esac
+  else
+    ksu="ksu"
+  fi
 
   # DTB selection
   select_option "DTB CPU Frequency" "EFFCPU" "Default"
@@ -124,7 +136,9 @@ configure_auto() {
     ui_print "--> EFFCPUFreq not detected, skipping..."
     dtb="dtb_def"
   fi
-
+  sleep 0.5
+  ui_print "--> KSU is on by default, configuring..."
+    ksu="ksu"
   sleep 0.5
   if [[ "$devicename" == "alioth" ]]; then
     if [[ "$ZIPFILE" == *5k* || "$ZIPFILE" == *5K* ]]; then
@@ -146,9 +160,9 @@ choose_config_mode() {
   ui_print "--> Select Kernel Configuration :"
   ui_print "  (Vol +) Manual Configuration "
   ui_print "  (Vol -) Auto Configuration "
-  ui_print "  ! Timeout in 8 seconds, defaults to Auto"
+  ui_print "  ! Timeout in 4 seconds, defaults to Auto"
 
-  local timeout=8
+  local timeout=4
   local start now key_event
 
   start=$(date +%s)
@@ -183,7 +197,7 @@ choose_config_mode() {
 # Install begins here
 # 
 
-devicename=lmi
+devicename=vayu
 case "$devicename" in
   munch|alioth|pipa)
     is_slot_device=1;
@@ -202,7 +216,6 @@ if [[ -f /vendor/OemPorts10T.prop ]] ||
   [[ -f /vendor/etc/init/OemPorts10T.rc ]]; then
   ui_print " ! Detected OPLUS Port ROM by Dandaa !"
   ui_print " ! Manual Configuration is Recommended !"
-  ui_print " Note : Port ROM Usually Need KernelSU Root !"
   rom="rom_port"
   oplus=1
 else
@@ -224,9 +237,10 @@ mv *-dtbo.img $home/dtbo.img
 
 dump_boot
 
-ui_print "--> Applying configuration..."
-ui_print " $rom,$dtbo,$dtb,$batt"
-patch_cmdline "e404_args" "e404_args=$rom,$dtbo,$dtb,$batt"
+ui_print "--> Applying configuration..."  rom="rom_port"
+
+ui_print " $rom,$dtbo,$dtb,$batt,$ksu"
+patch_cmdline "e404_args" "e404_args=$rom,$dtbo,$dtb,$batt,$ksu"
 
 write_boot
 
