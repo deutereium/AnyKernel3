@@ -56,29 +56,51 @@ select_option() {
 
 configure_manual() {
   # ROM selection
-  select_option "ROM/DTBO Type" "AOSP/CLO" "MIUI/HyperOS"
+  select_option "Refresh Rate" "120Hz" "130Hz"
   rom_sel="$SELECT_RESULT"
   case "$rom_sel" in
-    *AOSP*|*CLO*)
-      [ "$oplus" != "1" ] && rom="rom_aosp"
-      dtbo="dtbo_def"
+    *120*|*120Hz*)
+      rr="dtbo_120"
       ;;
-    *MIUI*|*HyperOS*)
-      [ "$oplus" != "1" ] && rom="rom_oem"
-      dtbo="dtbo_oem"
+    *130*|*130Hz*)
+      rr="dtbo_130"
       ;;
   esac
 
-  # KSU selection vayu only
-  if [[ "$devicename" == "vayu" ]]; then
-    select_option "KernelSU" "KSU" "OFF"
-    ksu_sel="$SELECT_RESULT"
-    case "$ksu_sel" in
-     *KSU*) ksu="ksu" ;;
-     *) ksu="noksu" ;;
+  select_option "DTBO Type" "MIUI" "AOSP"
+  rom_sel="$SELECT_RESULT"
+  case "$rom_sel" in
+    *miui*|*MIUI*)
+      dtbo="dtbo_oem"
+      ;;
+    *aosp*|*AOSP*)
+      dtbo="dtbo_def"
+      ;;
+  esac
+
+  select_option "KernelSU" "KSU" "OFF"
+  ksu_sel="$SELECT_RESULT"
+  case "$ksu_sel" in
+   *KSU*) ksu="ksu" ;;
+   *) ksu="noksu" ;;
+  esac
+  
+  select_option "Lyb Touchscreen mod" "Disable (stock MIUI control)" "Enable (AOSP override)"
+  tsmod_sel="$SELECT_RESULT"
+  case "$tsmod_sel" in
+   *Disable*) lyb="lyb0" ;;
+   *) lyb="lyb1" ;;
+  esac
+
+  if [[ "$lyb" == "lyb1" ]]; then
+    select_option "Lyb Touchscreen mode" "Standard (orientation + IC tuning)" "Pressure (+ contact size reporting)"
+    lyb_sel="$SELECT_RESULT"
+    case "$lyb_sel" in
+      *Standard*) lyb="lyb1" ;;
+      *) lyb="lyb2" ;;
     esac
   else
-    ksu="ksu"
+    lyb="lyb0"
   fi
 
   # DTB selection
@@ -127,7 +149,9 @@ configure_auto() {
       dtbo="dtbo_def"
       ;;
   esac
-
+  sleep 0.5
+    ui_print "--> 120hz by default, configuring..."
+    rr="dtbo_120"
   sleep 0.5
   if [[ "$ZIPFILE" == *effcpu* || "$ZIPFILE" == *EFFCPU* ]]; then
     ui_print "--> EFFCPUFreq is detected, configuring..."
@@ -151,6 +175,9 @@ configure_auto() {
   else
     batt="batt_def"
   fi
+  sleep 0.5
+    ui_print "--> Lyb tsmod disabled by default (stock MIUI control)...."
+    lyb="lyb0"
 
   ui_print " " " Auto configuration done !" " "
   sleep 0.5
@@ -160,9 +187,9 @@ choose_config_mode() {
   ui_print "--> Select Kernel Configuration :"
   ui_print "  (Vol +) Manual Configuration "
   ui_print "  (Vol -) Auto Configuration "
-  ui_print "  ! Timeout in 4 seconds, defaults to Auto"
+  ui_print "  ! Timeout in 8 seconds, defaults to Auto"
 
-  local timeout=4
+  local timeout=8
   local start now key_event
 
   start=$(date +%s)
@@ -237,10 +264,10 @@ mv *-dtbo.img $home/dtbo.img
 
 dump_boot
 
-ui_print "--> Applying configuration..."  rom="rom_port"
+ui_print "--> Applying configuration..."  
 
-ui_print " $rom,$dtbo,$dtb,$batt,$ksu"
-patch_cmdline "e404_args" "e404_args=$rom,$dtbo,$dtb,$batt,$ksu"
+ui_print " $rom,$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
+patch_cmdline "e404_args" "e404_args=$rom,$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
 
 write_boot
 
