@@ -128,7 +128,7 @@ configure_manual() {
 }
 
 configure_auto() {
-  sleep 0.5
+  sleep 0.1
   miprops="$(file_getprop /vendor/build.prop "ro.vendor.miui.build.region" 2>/dev/null)"
   if [[ -z "$miprops" ]]; then
     miprops="$(file_getprop /product/etc/build.prop "ro.miui.build.region" 2>/dev/null)"
@@ -149,10 +149,10 @@ configure_auto() {
       dtbo="dtbo_def"
       ;;
   esac
-  sleep 0.5
+  sleep 0.1
     ui_print "--> 120hz by default, configuring..."
     rr="dtbo_120"
-  sleep 0.5
+  sleep 0.1
   if [[ "$ZIPFILE" == *effcpu* || "$ZIPFILE" == *EFFCPU* ]]; then
     ui_print "--> EFFCPUFreq is detected, configuring..."
     dtb="dtb_effcpu"
@@ -160,10 +160,10 @@ configure_auto() {
     ui_print "--> EFFCPUFreq not detected, skipping..."
     dtb="dtb_def"
   fi
-  sleep 0.5
+  sleep 0.1
   ui_print "--> KSU is on by default, configuring..."
     ksu="ksu"
-  sleep 0.5
+  sleep 0.1
   if [[ "$devicename" == "alioth" ]]; then
     if [[ "$ZIPFILE" == *5k* || "$ZIPFILE" == *5K* ]]; then
       ui_print "--> 5K battery profile detected, configuring..."
@@ -175,12 +175,12 @@ configure_auto() {
   else
     batt="batt_def"
   fi
-  sleep 0.5
+  sleep 0.1
     ui_print "--> Lyb tsmod disabled by default (stock MIUI control)...."
     lyb="lyb0"
 
   ui_print " " " Auto configuration done !" " "
-  sleep 0.5
+  sleep 0.1
 }
 
 choose_config_mode() {
@@ -250,24 +250,51 @@ else
   devicecheck
 fi
 
-sleep 0.5
-if [[ "$SIDELOAD" == "1" ]]; then
-  ui_print " " " ! Sideloading Detected, Overriding to Manual Configuration !"
-  configure_manual
-else
-  choose_config_mode
-fi
-
 mv *-Image $home/Image
 mv *-dtb $home/dtb
 mv *-dtbo.img $home/dtbo.img
 
 dump_boot
 
-ui_print "--> Applying configuration..."  
+if [ -f "$split_img/cmdline.txt" ]; then
+  existing_args=$(grep -o 'e404_args=[^ ]*' $split_img/cmdline.txt 2>/dev/null)
+else
+  existing_args=$(grep "^cmdline=" $split_img/header 2>/dev/null | cut -d= -f2- | grep -o 'e404_args=[^ ]*')
+fi
 
-ui_print " $rom,$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
-patch_cmdline "e404_args" "e404_args=$rom,$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
+sleep 0.5
+if [[ "$SIDELOAD" == "1" ]]; then
+  ui_print " " " ! Sideloading Detected, Overriding to Manual Configuration !"
+  configure_manual
+elif [[ -n "$existing_args" ]]; then
+  ui_print "--> Existing cmdline config found : " " "
+  ui_print "--> $existing_args" " "
+  ui_print "--> Autoconfig will use existing cmdline."
+  ui_print "  (Vol +) keep existing"
+  ui_print "  (Vol -) Reconfigure"
+  ui_print ""
+  ui_print "  ! Timeout in 3 seconds, defaults to keep existing"
+  key_event=$(timeout 3 sh -c 'while true; do e=$(getevent -qlc 1 2>/dev/null); [ -n "$e" ] && echo "$e" && break; done')
+  if echo "$key_event" | grep -q "KEY_VOLUMEDOWN"; then
+    ui_print "  Selected : Reconfigure" " "
+    sleep 0.5
+    choose_config_mode
+  else
+    ui_print "  Selected : keep existing config" " "
+    skip_patch_cmdline=1
+  fi
+else
+  choose_config_mode
+fi
+
+ui_print "--> Applying configuration..."
+
+if [[ "$skip_patch_cmdline" != "1" ]]; then
+  ui_print " $rom,$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
+  patch_cmdline "e404_args" "e404_args=$rom,$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
+else
+  ui_print " $existing_args"
+fi
 
 write_boot
 
