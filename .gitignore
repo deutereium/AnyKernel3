@@ -1,2 +1,6 @@
-
-
+*-dtbo.img*
+*-Image*
+*-dtb*
+modules/system/lib/modules/placeholder
+patch/placeholder
+ramdisk/placeholder
