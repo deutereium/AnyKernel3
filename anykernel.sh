@@ -85,7 +85,7 @@ configure_manual() {
    *) ksu="noksu" ;;
   esac
   
-  select_option "Lyb Touchscreen mod" "Disable (stock MIUI control)" "Enable (AOSP override)"
+  select_option "Lyb Touchscreen mod" "Disable" "Enable"
   tsmod_sel="$SELECT_RESULT"
   case "$tsmod_sel" in
    *Disable*) lyb="lyb0" ;;
@@ -93,7 +93,7 @@ configure_manual() {
   esac
 
   if [[ "$lyb" == "lyb1" ]]; then
-    select_option "Lyb Touchscreen mode" "Standard (orientation + IC tuning)" "Pressure (+ contact size reporting)"
+    select_option "Lyb Touchscreen mode" "Standard (only load Lyb's custom ts firmware)" "Advanced Pressure"
     lyb_sel="$SELECT_RESULT"
     case "$lyb_sel" in
       *Standard*) lyb="lyb1" ;;
@@ -224,7 +224,7 @@ choose_config_mode() {
 # Install begins here
 # 
 
-devicename=vayu
+devicename=vaybpf
 case "$devicename" in
   munch|alioth|pipa)
     is_slot_device=1;
