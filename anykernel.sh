@@ -126,7 +126,7 @@ configure_auto() {
       dtbo="dtbo_oem"
       ;;
     *)
-      if [[ "$(echo "$oosbrand" | tr '[:upper:]' '[:lower:]')" == "oneplus" ]]; then
+      if echo "$oosbrand" | grep -qi "oneplus"; then
         ui_print "--> OxygenOS ROM detected, configuring..."
         dtbo="dtbo_oem"
       elif [[ "$oplus" != "1" ]]; then
@@ -150,19 +150,7 @@ configure_auto() {
   ui_print "--> KSU is on by default, configuring..."
     ksu="ksu"
   sleep 0.1
-  if [[ "$devicename" == "alioth" ]]; then
-    if [[ "$ZIPFILE" == *5k* || "$ZIPFILE" == *5K* ]]; then
-      ui_print "--> 5K battery profile detected, configuring..."
-      batt="batt_5k"
-    else
-      ui_print "--> Stock Alioth battery profile, configuring..."
-      batt="batt_def"
-    fi
-  else
-    batt="batt_def"
-  fi
-  sleep 0.1
-    ui_print "--> Lyb tsmod disabled by default (stock MIUI control)...."
+    ui_print "--> Lyb tsmod disabled by default (stock MIUI firmware)...."
     lyb="lyb0"
 
   ui_print " " " Auto configuration done !" " "
