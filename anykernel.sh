@@ -1,11 +1,8 @@
 # AnyKernel3 Ramdisk Mod Script
 # osm0sis @ xda-developers
-#
-# E404R kernel custom installer by 113
-# What are you looking for ?
 
 properties() { '
-kernel.string=\\ E404R Kernel by Project 113 \\
+kernel.string=\\ RE404 Kernel by Project 113 \\
 do.modules=0
 do.systemless=1
 '; }
@@ -24,9 +21,6 @@ devicecheck() {
       fi
     done
   done
-  #if [[ ! "$match" ]]; then
-  #  abort " " " Unsupported device. Aborting...";
-  #fi
 }
 
 select_option() {
@@ -55,10 +49,10 @@ select_option() {
 }
 
 configure_manual() {
-  # ROM selection
+
   select_option "Refresh Rate" "120Hz" "130Hz"
-  rom_sel="$SELECT_RESULT"
-  case "$rom_sel" in
+  ref_sel="$SELECT_RESULT"
+  case "$ref_sel" in
     *120*|*120Hz*)
       rr="dtbo_120"
       ;;
@@ -67,7 +61,7 @@ configure_manual() {
       ;;
   esac
 
-  select_option "DTBO Type" "MIUI" "AOSP"
+  select_option "DTBO Type" "OEM (MIUI/Oxygen)" "AOSP"
   rom_sel="$SELECT_RESULT"
   case "$rom_sel" in
     *miui*|*MIUI*)
@@ -103,25 +97,12 @@ configure_manual() {
     lyb="lyb0"
   fi
 
-  # DTB selection
   select_option "DTB CPU Frequency" "EFFCPU" "Default"
   dtb_sel="$SELECT_RESULT"
   case "$dtb_sel" in
     *EFFCPU*) dtb="dtb_effcpu" ;;
     *) dtb="dtb_def" ;;
   esac
-
-  # Battery profile (Alioth only)
-  if [[ "$devicename" == "alioth" ]]; then
-    select_option "Battery Profile" "5000mAh" "Default"
-    batt_sel="$SELECT_RESULT"
-    case "$batt_sel" in
-      *5000*) batt="batt_5k" ;;
-      *) batt="batt_def" ;;
-    esac
-  else
-    batt="batt_def"
-  fi
 
   ui_print " Manual configuration done !" " "
   sleep 0.5
@@ -133,20 +114,25 @@ configure_auto() {
   if [[ -z "$miprops" ]]; then
     miprops="$(file_getprop /product/etc/build.prop "ro.miui.build.region" 2>/dev/null)"
   fi
+
+  oosbrand="$(file_getprop /system/build.prop "ro.product.brand" 2>/dev/null)"
+  if [[ -z "$oosbrand" ]]; then
+    oosbrand="$(file_getprop /odm/build.prop "ro.product.brand" 2>/dev/null)"
+  fi
+
   case "$miprops" in
     cn|in|ru|id|eu|tr|tw|gb|global|mx|jp|kr|lm|cl|mi)
       ui_print "--> Miui/HyperOS ROM detected, configuring..."
-      rom="rom_oem"
       dtbo="dtbo_oem"
       ;;
     *)
-      if [[ "$oplus" != "1" ]]; then
+      if [[ "$(echo "$oosbrand" | tr '[:upper:]' '[:lower:]')" == "oneplus" ]]; then
+        ui_print "--> OxygenOS ROM detected, configuring..."
+        dtbo="dtbo_oem"
+      elif [[ "$oplus" != "1" ]]; then
         ui_print "--> AOSP/CLO ROM detected, configuring..."
-        rom="rom_aosp"
-      else
-        ui_print "--> Oplus Port ROM detected, configuring..."
+        dtbo="dtbo_def"
       fi
-      dtbo="dtbo_def"
       ;;
   esac
   sleep 0.1
@@ -239,16 +225,7 @@ patch_vbmeta_flag=auto
 
 . tools/ak3-core.sh
 
-if [[ -f /vendor/OemPorts10T.prop ]] ||
-  [[ -f /vendor/etc/init/OemPorts10T.rc ]]; then
-  ui_print " ! Detected OPLUS Port ROM by Dandaa !"
-  ui_print " ! Manual Configuration is Recommended !"
-  rom="rom_port"
-  oplus=1
-else
-  oplus=0
-  devicecheck
-fi
+devicecheck
 
 mv *-Image $home/Image
 mv *-dtb $home/dtb
@@ -290,8 +267,8 @@ fi
 ui_print "--> Applying configuration..."
 
 if [[ "$skip_patch_cmdline" != "1" ]]; then
-  ui_print " $rom,$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
-  patch_cmdline "e404_args" "e404_args=$rom,$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
+  ui_print " $dtbo,$dtb,$batt,$ksu,$rr,$lyb"
+  patch_cmdline "e404_args" "e404_args=$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
 else
   ui_print " $existing_args"
 fi
