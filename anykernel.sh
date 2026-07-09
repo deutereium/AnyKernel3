@@ -2,7 +2,7 @@
 # osm0sis @ xda-developers
 
 properties() { '
-kernel.string=\\ RE404 Kernel by Project 113 \\
+kernel.string=\\ RE404 Kernel by Project 113 @deutereum @sk113r \\
 do.modules=0
 do.systemless=1
 '; }
@@ -97,6 +97,13 @@ configure_manual() {
     lyb="lyb0"
   fi
 
+  select_option "IR Blaster" "IR0 (works for most roms)" "IR1 (for newer roms)"
+  ir_sel="$SELECT_RESULT"
+  case "$ir_sel" in
+   *IR0*) ir="ir0" ;;
+   *) ir="ir1" ;;
+  esac
+
   select_option "DTB CPU Frequency" "EFFCPU" "Default"
   dtb_sel="$SELECT_RESULT"
   case "$dtb_sel" in
@@ -152,6 +159,9 @@ configure_auto() {
   sleep 0.1
     ui_print "--> Lyb tsmod disabled by default (stock MIUI firmware)...."
     lyb="lyb0"
+  sleep 0.1
+    ui_print "--> using ir0 remote configuration"
+    ir="ir0"
 
   ui_print " " " Auto configuration done !" " "
   sleep 0.1
@@ -255,8 +265,8 @@ fi
 ui_print "--> Applying configuration..."
 
 if [[ "$skip_patch_cmdline" != "1" ]]; then
-  ui_print " $dtbo,$dtb,$batt,$ksu,$rr,$lyb"
-  patch_cmdline "e404_args" "e404_args=$dtbo,$dtb,$batt,$ksu,$rr,$lyb"
+  ui_print " $dtbo,$dtb,$ksu,$rr,$lyb,$ir"
+  patch_cmdline "e404_args" "e404_args=$dtbo,$dtb,$ksu,$rr,$lyb,$ir"
 else
   ui_print " $existing_args"
 fi
