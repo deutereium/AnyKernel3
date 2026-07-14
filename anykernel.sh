@@ -72,13 +72,6 @@ configure_manual() {
       ;;
   esac
 
-  select_option "KernelSU" "KSU" "OFF"
-  ksu_sel="$SELECT_RESULT"
-  case "$ksu_sel" in
-   *KSU*) ksu="ksu" ;;
-   *) ksu="noksu" ;;
-  esac
-  
   select_option "Lyb Touchscreen mod" "Disable" "Enable"
   tsmod_sel="$SELECT_RESULT"
   case "$tsmod_sel" in
@@ -153,9 +146,6 @@ configure_auto() {
     ui_print "--> EFFCPUFreq not detected, skipping..."
     dtb="dtb_def"
   fi
-  sleep 0.1
-  ui_print "--> KSU is on by default, configuring..."
-    ksu="ksu"
   sleep 0.1
     ui_print "--> Lyb tsmod disabled by default (stock MIUI firmware)...."
     lyb="lyb0"
@@ -265,8 +255,8 @@ fi
 ui_print "--> Applying configuration..."
 
 if [[ "$skip_patch_cmdline" != "1" ]]; then
-  ui_print " $dtbo,$dtb,$ksu,$rr,$lyb,$ir"
-  patch_cmdline "e404_args" "e404_args=$dtbo,$dtb,$ksu,$rr,$lyb,$ir"
+  ui_print " $dtbo,$dtb,$rr,$lyb,$ir"
+  patch_cmdline "e404_args" "e404_args=$dtbo,$dtb,$rr,$lyb,$ir"
 else
   ui_print " $existing_args"
 fi
