@@ -50,17 +50,6 @@ select_option() {
 
 configure_manual() {
 
-  select_option "Refresh Rate" "120Hz" "130Hz"
-  ref_sel="$SELECT_RESULT"
-  case "$ref_sel" in
-    *120*|*120Hz*)
-      rr="dtbo_120"
-      ;;
-    *130*|*130Hz*)
-      rr="dtbo_130"
-      ;;
-  esac
-
   select_option "DTBO Type" "OEM (MIUI/Oxygen)" "AOSP"
   rom_sel="$SELECT_RESULT"
   case "$rom_sel" in
@@ -69,6 +58,24 @@ configure_manual() {
       ;;
     *aosp*|*AOSP*)
       dtbo="dtbo_def"
+      ;;
+  esac
+
+  select_option "IR Blaster" "IR0 (works for most roms)" "IR1 (for newer roms)"
+  ir_sel="$SELECT_RESULT"
+  case "$ir_sel" in
+   *IR0*) ir="ir0" ;;
+   *) ir="ir1" ;;
+  esac
+
+  select_option "Refresh Rate" "120Hz" "130Hz"
+  ref_sel="$SELECT_RESULT"
+  case "$ref_sel" in
+    *120*|*120Hz*)
+      rr="dtbo_120"
+      ;;
+    *130*|*130Hz*)
+      rr="dtbo_130"
       ;;
   esac
 
@@ -89,13 +96,6 @@ configure_manual() {
   else
     lyb="lyb0"
   fi
-
-  select_option "IR Blaster" "IR0 (works for most roms)" "IR1 (for newer roms)"
-  ir_sel="$SELECT_RESULT"
-  case "$ir_sel" in
-   *IR0*) ir="ir0" ;;
-   *) ir="ir1" ;;
-  esac
 
   select_option "DTB CPU Frequency" "EFFCPU" "Default"
   dtb_sel="$SELECT_RESULT"
