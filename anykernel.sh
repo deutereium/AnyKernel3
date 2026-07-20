@@ -68,6 +68,13 @@ configure_manual() {
    *) ir="ir1" ;;
   esac
 
+  select_option "Kernel Batt Profile" "Default 5160mAh" "aftermarket 6000mAh"
+  batt_sel="$SELECT_RESULT"
+  case "$batt_sel" in
+   *Default*) batt="batt_def" ;;
+   *) batt="batt_6k" ;;
+  esac
+
   select_option "Refresh Rate" "120Hz" "130Hz"
   ref_sel="$SELECT_RESULT"
   case "$ref_sel" in
@@ -152,6 +159,9 @@ configure_auto() {
   sleep 0.1
     ui_print "--> using ir0 remote configuration"
     ir="ir0"
+  sleep 0.1
+    ui_print "--> using default kernel battery profile"
+    batt="batt_def"
 
   ui_print " " " Auto configuration done !" " "
   sleep 0.1
@@ -198,7 +208,7 @@ choose_config_mode() {
 # Install begins here
 # 
 
-devicename=vaybpf
+devicename=vayu
 case "$devicename" in
   munch|alioth|pipa)
     is_slot_device=1;
@@ -255,8 +265,8 @@ fi
 ui_print "--> Applying configuration..."
 
 if [[ "$skip_patch_cmdline" != "1" ]]; then
-  ui_print " $dtbo,$dtb,$rr,$lyb,$ir"
-  patch_cmdline "e404_args" "e404_args=$dtbo,$dtb,$rr,$lyb,$ir"
+  ui_print " $dtbo,$dtb,$rr,$lyb,$ir,$batt"
+  patch_cmdline "e404_args" "e404_args=$dtbo,$dtb,$rr,$lyb,$ir,$batt"
 else
   ui_print " $existing_args"
 fi
