@@ -75,13 +75,17 @@ configure_manual() {
    *) batt="batt_6k" ;;
   esac
 
+  if [[ "$dtbo" == "dtbo_def" ]]; then
   select_option "Refresh Rate" "120Hz" "130Hz"
+  else
+  select_option "Refresh Rate (HyperOS please select 121Hz)" "120Hz" "121Hz"
+  fi
   ref_sel="$SELECT_RESULT"
   case "$ref_sel" in
     *120*|*120Hz*)
       rr="dtbo_120"
       ;;
-    *130*|*130Hz*)
+    *130*|*121*)
       rr="dtbo_130"
       ;;
   esac
@@ -208,7 +212,7 @@ choose_config_mode() {
 # Install begins here
 # 
 
-devicename=vayu
+devicename=vaybpf
 case "$devicename" in
   munch|alioth|pipa)
     is_slot_device=1;
